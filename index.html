@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DropSafe : Advanced Groundwater Assessment System</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configure Tailwind after it loads
+        window.addEventListener('DOMContentLoaded', function() {
+            if (typeof tailwind !== 'undefined') {
+                tailwind.config = {
+                    theme: {
+                        extend: {
+                            animation: {
+                                'bounce-slow': 'bounce 2s infinite',
+                                'pulse-slow': 'pulse 3s infinite',
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+    <style>
+        /* Custom animations and styles */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.6s ease-out; }
+        
+        /* Gradient animations */
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .animated-gradient {
+            background-size: 200% 200%;
+            animation: gradient 6s ease infinite;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, #3b82f6, #6366f1);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(to bottom, #2563eb, #4f46e5);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Lucide React Icons (simplified SVG versions)
+        const LucideIcon = ({ name, size = 24, className = "" }) => {
+            const icons = {
+                Upload: <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,5 17,10"/><line x1="12" y1="5" x2="12" y2="15"/></svg>,
+                Download: <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+                Calculator: <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="10" x2="8" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="12" y2="18"/><line x1="16" y1="18" x2="16" y2="18"/></svg>,
+                AlertTriangle: <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="m12 17 .01 0"/></svg>,
+                CheckCircle: <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>,
+                Info: <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="m12 8 .01 0"/></svg>,
+                FileText: <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>,
+                BarChart3: <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>,
+                Droplets: <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2.04 4.6 4.14 5.93a.83.83 0 0 1 .27.91 4.84 4.84 0 0 1-3.14 3.08 4.02 4.02 0 0 1-4.69-2.25"/></svg>,
+                MapPin: <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
+                Users: <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+                Target: <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+                Zap: <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2"/></svg>,
+                Database: <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>,
+                Shield: <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+                TrendingUp: <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22,7 13.5,15.5 8.5,10.5 2,17"/><polyline points="16,7 22,7 22,13"/></svg>,
+                Activity: <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+            };
+            return icons[name] || <div>?</div>;
+        };
+
+        const GroundwaterHMPICalculator = () => {
+            const [activeTab, setActiveTab] = useState('input');
+            const [sampleData, setSampleData] = useState([]);
+            const [results, setResults] = useState({});
+            const [standards, setStandards] = useState('WHO');
+            const [processingStatus, setProcessingStatus] = useState('');
+            const [datasetFile, setDatasetFile] = useState(null);
+            const [autoValidation, setAutoValidation] = useState(true);
+            const [qualityCategories, setQualityCategories] = useState([]);
+            const [riskAssessment, setRiskAssessment] = useState({});
+
+            // WHO and EPA drinking water standards (μg/L)
+            const waterQualityStandards = {
+                WHO: {
+                    'As': 10, 'Cd': 3, 'Cr': 50, 'Cu': 2000, 'Fe': 300, 'Pb': 10, 'Mn': 400, 'Ni': 70, 'Zn': 3000, 'Hg': 6
+                },
+                EPA: {
+                    'As': 10, 'Cd': 5, 'Cr': 100, 'Cu': 1300, 'Fe': 300, 'Pb': 15, 'Mn': 50, 'Ni': 100, 'Zn': 5000, 'Hg': 2
+                },
+                Indian: {
+                    'As': 10, 'Cd': 3, 'Cr': 50, 'Cu': 50, 'Fe': 300, 'Pb': 10, 'Mn': 100, 'Ni': 20, 'Zn': 5000, 'Hg': 1
+                }
+            };
+
+            // Health risk weights for different metals
+            const healthRiskWeights = {
+                'As': 5, 'Cd': 5, 'Cr': 3, 'Cu': 2, 'Fe': 1, 'Pb': 5, 'Mn': 2, 'Ni': 3, 'Zn': 1, 'Hg': 5
+            };
+
+            // Demo data for preview
+            useEffect(() => {
+                const demoSamples = [
+                    {
+                        id: 1,
+                        name: 'Groundwater Well GW-01',
+                        location: 'Kanpur Industrial Area',
+                        coordinates: { lat: '26.4499', lng: '80.3319' },
+                        elevation: '142',
+                        depth: '25',
+                        aquiferType: 'Unconfined',
+                        date: '2024-09-15',
+                        metals: { 'As': 15, 'Cd': 2, 'Cr': 75, 'Cu': 45, 'Fe': 450, 'Pb': 12, 'Mn': 150, 'Ni': 25, 'Zn': 1200, 'Hg': 3 },
+                        qualityCategory: 'Fair',
+                        riskLevel: 'Moderate',
+                        validated: true
+                    },
+                    {
+                        id: 2,
+                        name: 'Borewell BW-02',
+                        location: 'Residential Area, Sector 12',
+                        coordinates: { lat: '26.4673', lng: '80.3498' },
+                        elevation: '138',
+                        depth: '45',
+                        aquiferType: 'Confined',
+                        date: '2024-09-16',
+                        metals: { 'As': 25, 'Cd': 4, 'Cr': 120, 'Cu': 35, 'Fe': 280, 'Pb': 18, 'Mn': 80, 'Ni': 15, 'Zn': 800, 'Hg': 8 },
+                        qualityCategory: 'Poor',
+                        riskLevel: 'High',
+                        validated: true
+                    },
+                    {
+                        id: 3,
+                        name: 'Hand Pump HP-03',
+                        location: 'Rural Village, Kalyanpur',
+                        coordinates: { lat: '26.4234', lng: '80.2876' },
+                        elevation: '145',
+                        depth: '15',
+                        aquiferType: 'Unconfined',
+                        date: '2024-09-17',
+                        metals: { 'As': 5, 'Cd': 1, 'Cr': 30, 'Cu': 25, 'Fe': 150, 'Pb': 6, 'Mn': 50, 'Ni': 10, 'Zn': 500, 'Hg': 1 },
+                        qualityCategory: 'Good',
+                        riskLevel: 'Low',
+                        validated: true
+                    }
+                ];
+
+                setSampleData(demoSamples);
+                
+                setTimeout(() => {
+                    calculateAllIndices();
+                }, 500);
+            }, []);
+
+            const addSample = () => {
+                const newSample = {
+                    id: Date.now(),
+                    name: `Sample ${sampleData.length + 1}`,
+                    location: '',
+                    coordinates: { lat: '', lng: '' },
+                    elevation: '',
+                    depth: '',
+                    aquiferType: 'Unconfined',
+                    date: new Date().toISOString().split('T')[0],
+                    metals: {},
+                    qualityCategory: '',
+                    riskLevel: 'Unknown',
+                    validated: false
+                };
+                setSampleData([...sampleData, newSample]);
+            };
+
+            const updateSample = (id, field, value) => {
+                setSampleData(prev => prev.map(sample => 
+                    sample.id === id ? { ...sample, [field]: value } : sample
+                ));
+            };
+
+            const updateMetalConcentration = (sampleId, metal, concentration) => {
+                setSampleData(prev => prev.map(sample => 
+                    sample.id === sampleId 
+                        ? { 
+                            ...sample, 
+                            metals: { 
+                                ...sample.metals, 
+                                [metal]: parseFloat(concentration) || 0 
+                            } 
+                        }
+                        : sample
+                ));
+            };
+
+            const removeSample = (id) => {
+                setSampleData(prev => prev.filter(sample => sample.id !== id));
+            };
+
+            // Calculate Heavy Metal Pollution Index (HMPI)
+            const calculateHMPI = (sample) => {
+                const currentStandards = waterQualityStandards[standards];
+                let totalWeightedConcentration = 0;
+                let totalWeight = 0;
+
+                Object.keys(sample.metals).forEach(metal => {
+                    if (sample.metals[metal] > 0 && currentStandards[metal]) {
+                        const concentration = sample.metals[metal];
+                        const standard = currentStandards[metal];
+                        const weight = healthRiskWeights[metal] || 1;
+                        
+                        const subIndex = (concentration / standard) * 100;
+                        totalWeightedConcentration += subIndex * weight;
+                        totalWeight += weight;
+                    }
+                });
+
+                return totalWeight > 0 ? totalWeightedConcentration / totalWeight : 0;
+            };
+
+            // Calculate Heavy Metal Evaluation Index (HEI)
+            const calculateHEI = (sample) => {
+                const currentStandards = waterQualityStandards[standards];
+                let heiSum = 0;
+                let metalCount = 0;
+
+                Object.keys(sample.metals).forEach(metal => {
+                    if (sample.metals[metal] > 0 && currentStandards[metal]) {
+                        const concentration = sample.metals[metal];
+                        const standard = currentStandards[metal];
+                        heiSum += concentration / standard;
+                        metalCount++;
+                    }
+                });
+
+                return metalCount > 0 ? heiSum / metalCount : 0;
+            };
+
+            // Calculate Metal Index (MI)
+            const calculateMI = (sample) => {
+                const currentStandards = waterQualityStandards[standards];
+                const metalRatios = [];
+
+                Object.keys(sample.metals).forEach(metal => {
+                    if (sample.metals[metal] > 0 && currentStandards[metal]) {
+                        const concentration = sample.metals[metal];
+                        const standard = currentStandards[metal];
+                        metalRatios.push(concentration / standard);
+                    }
+                });
+
+                if (metalRatios.length === 0) return 0;
+                
+                const product = metalRatios.reduce((acc, val) => acc * val, 1);
+                return Math.pow(product, 1 / metalRatios.length);
+            };
+
+            // Calculate Degree of Contamination (Cd)
+            const calculateCd = (sample) => {
+                const currentStandards = waterQualityStandards[standards];
+                let cdSum = 0;
+
+                Object.keys(sample.metals).forEach(metal => {
+                    if (sample.metals[metal] > 0 && currentStandards[metal]) {
+                        const concentration = sample.metals[metal];
+                        const standard = currentStandards[metal];
+                        const contaminationFactor = concentration / standard;
+                        cdSum += contaminationFactor;
+                    }
+                });
+
+                return cdSum;
+            };
+
+            const getHMPIInterpretation = (hmpi) => {
+                if (hmpi < 100) return { level: 'Excellent', color: 'bg-emerald-100 text-emerald-800 border-emerald-200', risk: 'No significant risk' };
+                if (hmpi < 200) return { level: 'Good', color: 'bg-blue-100 text-blue-800 border-blue-200', risk: 'Low risk' };
+                if (hmpi < 300) return { level: 'Poor', color: 'bg-amber-100 text-amber-800 border-amber-200', risk: 'Moderate risk' };
+                return { level: 'Very Poor', color: 'bg-red-100 text-red-800 border-red-200', risk: 'High health risk' };
+            };
+
+            const getHEIInterpretation = (hei) => {
+                if (hei < 1) return { level: 'Low', color: 'bg-emerald-100 text-emerald-800 border-emerald-200', risk: 'Minimal pollution' };
+                if (hei < 2) return { level: 'Moderate', color: 'bg-amber-100 text-amber-800 border-amber-200', risk: 'Moderate pollution' };
+                if (hei < 3) return { level: 'High', color: 'bg-orange-100 text-orange-800 border-orange-200', risk: 'High pollution' };
+                return { level: 'Very High', color: 'bg-red-100 text-red-800 border-red-200', risk: 'Severe pollution' };
+            };
+
+            const getMIInterpretation = (mi) => {
+                if (mi < 0.3) return { level: 'Very Pure', color: 'bg-emerald-100 text-emerald-800 border-emerald-200', risk: 'Excellent quality' };
+                if (mi < 1) return { level: 'Pure', color: 'bg-blue-100 text-blue-800 border-blue-200', risk: 'Good quality' };
+                if (mi < 2) return { level: 'Slightly Affected', color: 'bg-amber-100 text-amber-800 border-amber-200', risk: 'Fair quality' };
+                if (mi < 4) return { level: 'Moderately Affected', color: 'bg-orange-100 text-orange-800 border-orange-200', risk: 'Poor quality' };
+                if (mi < 6) return { level: 'Strongly Affected', color: 'bg-red-100 text-red-800 border-red-200', risk: 'Very poor quality' };
+                return { level: 'Seriously Affected', color: 'bg-red-200 text-red-900 border-red-300', risk: 'Unsuitable for drinking' };
+            };
+
+            const getCdInterpretation = (cd) => {
+                if (cd < 1) return { level: 'Low', color: 'bg-emerald-100 text-emerald-800 border-emerald-200', risk: 'Low degree of contamination' };
+                if (cd < 3) return { level: 'Moderate', color: 'bg-amber-100 text-amber-800 border-amber-200', risk: 'Moderate degree of contamination' };
+                if (cd < 6) return { level: 'Considerable', color: 'bg-orange-100 text-orange-800 border-orange-200', risk: 'Considerable contamination' };
+                return { level: 'Very High', color: 'bg-red-100 text-red-800 border-red-200', risk: 'Very high contamination' };
+            };
+
+            // Advanced quality categorization based on multiple indices
+            const categorizeWaterQuality = (hmpi, hei, mi, cd) => {
+                const scores = {
+                    hmpi: hmpi < 100 ? 4 : hmpi < 200 ? 3 : hmpi < 300 ? 2 : 1,
+                    hei: hei < 1 ? 4 : hei < 2 ? 3 : hei < 3 ? 2 : 1,
+                    mi: mi < 0.3 ? 4 : mi < 1 ? 3 : mi < 2 ? 2 : mi < 4 ? 1 : 0,
+                    cd: cd < 1 ? 4 : cd < 3 ? 3 : cd < 6 ? 2 : 1
+                };
+                
+                const avgScore = (scores.hmpi + scores.hei + scores.mi + scores.cd) / 4;
+                
+                if (avgScore >= 3.5) return { category: 'Excellent', color: 'bg-gradient-to-r from-emerald-500 to-teal-600', textColor: 'text-white', suitability: 'Suitable for all uses', badgeColor: 'bg-emerald-100 text-emerald-800' };
+                if (avgScore >= 2.5) return { category: 'Good', color: 'bg-gradient-to-r from-blue-500 to-indigo-600', textColor: 'text-white', suitability: 'Suitable for drinking with minimal treatment', badgeColor: 'bg-blue-100 text-blue-800' };
+                if (avgScore >= 1.5) return { category: 'Fair', color: 'bg-gradient-to-r from-amber-500 to-orange-500', textColor: 'text-white', suitability: 'Requires treatment before drinking', badgeColor: 'bg-amber-100 text-amber-800' };
+                if (avgScore >= 0.5) return { category: 'Poor', color: 'bg-gradient-to-r from-orange-500 to-red-500', textColor: 'text-white', suitability: 'Not suitable for drinking, industrial use only', badgeColor: 'bg-orange-100 text-orange-800' };
+                return { category: 'Very Poor', color: 'bg-gradient-to-r from-red-500 to-red-700', textColor: 'text-white', suitability: 'Unsuitable for any purpose', badgeColor: 'bg-red-100 text-red-800' };
+            };
+
+            // Comprehensive risk assessment
+            const assessHealthRisk = (sample) => {
+                const currentStandards = waterQualityStandards[standards];
+                const highRiskMetals = ['As', 'Cd', 'Pb', 'Hg'];
+                const criticalExceedances = [];
+                const moderateExceedances = [];
+                
+                Object.keys(sample.metals).forEach(metal => {
+                    if (sample.metals[metal] > 0 && currentStandards[metal]) {
+                        const ratio = sample.metals[metal] / currentStandards[metal];
+                        if (ratio > 1) {
+                            const exceedance = { metal, ratio, concentration: sample.metals[metal], standard: currentStandards[metal] };
+                            if (highRiskMetals.includes(metal) && ratio > 2) {
+                                criticalExceedances.push(exceedance);
+                            } else if (ratio > 1.5) {
+                                moderateExceedances.push(exceedance);
+                            }
+                        }
+                    }
+                });
+                
+                let riskLevel = 'Low';
+                let recommendations = ['Water quality is within acceptable limits'];
+                
+                if (criticalExceedances.length > 0) {
+                    riskLevel = 'Critical';
+                    recommendations = [
+                        'Immediate action required - do not use for drinking',
+                        'Identify and eliminate contamination sources',
+                        'Implement advanced treatment systems',
+                        'Monitor continuously until levels normalize'
+                    ];
+                } else if (moderateExceedances.length > 2) {
+                    riskLevel = 'High';
+                    recommendations = [
+                        'Treatment required before consumption',
+                        'Regular monitoring recommended',
+                        'Consider alternative water sources'
+                    ];
+                } else if (moderateExceedances.length > 0) {
+                    riskLevel = 'Moderate';
+                    recommendations = [
+                        'Basic treatment may be sufficient',
+                        'Monitor quarterly',
+                        'Consider preventive measures'
+                    ];
+                }
+                
+                return { riskLevel, criticalExceedances, moderateExceedances, recommendations };
+            };
+
+            // Automated data validation
+            const validateSampleData = (sample) => {
+                const errors = [];
+                const warnings = [];
+                
+                if (!sample.coordinates.lat || !sample.coordinates.lng) {
+                    warnings.push('Geographic coordinates missing - spatial analysis limited');
+                }
+                
+                Object.keys(sample.metals).forEach(metal => {
+                    const conc = sample.metals[metal];
+                    if (conc < 0) errors.push(`Negative concentration for ${metal}`);
+                    if (conc > 10000) warnings.push(`Unusually high ${metal} concentration (>10,000 μg/L)`);
+                });
+                
+                const sampleDate = new Date(sample.date);
+                const now = new Date();
+                if (sampleDate > now) {
+                    errors.push('Sample date cannot be in the future');
+                }
+                
+                return { errors, warnings, isValid: errors.length === 0 };
+            };
+
+            const calculateAllIndices = () => {
+                if (sampleData.length === 0) {
+                    setProcessingStatus('No samples to process');
+                    return;
+                }
+
+                setProcessingStatus('Validating sample data...');
+                
+                const validationResults = {};
+                sampleData.forEach(sample => {
+                    validationResults[sample.id] = validateSampleData(sample);
+                });
+                
+                setProcessingStatus('Calculating pollution indices...');
+                
+                const calculatedResults = {};
+                const categories = [];
+                const riskData = {};
+                
+                sampleData.forEach(sample => {
+                    const validation = validationResults[sample.id];
+                    
+                    if (validation.isValid) {
+                        const hmpi = calculateHMPI(sample);
+                        const hei = calculateHEI(sample);
+                        const mi = calculateMI(sample);
+                        const cd = calculateCd(sample);
+                        
+                        const qualityCategory = categorizeWaterQuality(hmpi, hei, mi, cd);
+                        const riskAssessmentResult = assessHealthRisk(sample);
+
+                        calculatedResults[sample.id] = {
+                            hmpi: { value: hmpi, interpretation: getHMPIInterpretation(hmpi) },
+                            hei: { value: hei, interpretation: getHEIInterpretation(hei) },
+                            mi: { value: mi, interpretation: getMIInterpretation(mi) },
+                            cd: { value: cd, interpretation: getCdInterpretation(cd) },
+                            qualityCategory,
+                            validation
+                        };
+                        
+                        riskData[sample.id] = riskAssessmentResult;
+                        categories.push(qualityCategory.category);
+                        
+                        setSampleData(prev => prev.map(s => 
+                            s.id === sample.id 
+                                ? { 
+                                    ...s, 
+                                    qualityCategory: qualityCategory.category,
+                                    riskLevel: riskAssessmentResult.riskLevel,
+                                    validated: true
+                                }
+                                : s
+                        ));
+                    } else {
+                        calculatedResults[sample.id] = { validation, error: 'Sample validation failed' };
+                    }
+                });
+
+                setResults(calculatedResults);
+                setQualityCategories(categories);
+                setRiskAssessment(riskData);
+                setProcessingStatus('Calculations completed successfully with automated validation');
+            };
+
+            const handleFileUpload = (event) => {
+                const file = event.target.files[0];
+                if (file && file.type === 'text/csv') {
+                    setDatasetFile(file);
+                    setProcessingStatus('CSV file selected - ready for import');
+                }
+            };
+
+            const exportResults = () => {
+                const exportData = sampleData.map(sample => {
+                    const sampleResults = results[sample.id] || {};
+                    const riskData = riskAssessment[sample.id] || {};
+                    return {
+                        'Sample Name': sample.name,
+                        'Location': sample.location,
+                        'Latitude': sample.coordinates?.lat || '',
+                        'Longitude': sample.coordinates?.lng || '',
+                        'Elevation (m)': sample.elevation || '',
+                        'Depth (m)': sample.depth || '',
+                        'Aquifer Type': sample.aquiferType || '',
+                        'Date': sample.date,
+                        'Quality Category': sampleResults.qualityCategory?.category || 'N/A',
+                        'Risk Level': riskData.riskLevel || 'Unknown',
+                        'HMPI': sampleResults.hmpi?.value?.toFixed(2) || 'N/A',
+                        'HMPI Status': sampleResults.hmpi?.interpretation?.level || 'N/A',
+                        'HEI': sampleResults.hei?.value?.toFixed(2) || 'N/A',
+                        'HEI Status': sampleResults.hei?.interpretation?.level || 'N/A',
+                        'MI': sampleResults.mi?.value?.toFixed(2) || 'N/A',
+                        'MI Status': sampleResults.mi?.interpretation?.level || 'N/A',
+                        'Cd': sampleResults.cd?.value?.toFixed(2) || 'N/A',
+                        'Cd Status': sampleResults.cd?.interpretation?.level || 'N/A',
+                        'Validation Status': sampleResults.validation?.isValid ? 'Valid' : 'Invalid',
+                        'Critical Exceedances': riskData.criticalExceedances?.length || 0,
+                        'Moderate Exceedances': riskData.moderateExceedances?.length || 0,
+                        ...Object.keys(sample.metals).reduce((acc, metal) => {
+                            acc[`${metal} (μg/L)`] = sample.metals[metal] || 0;
+                            return acc;
+                        }, {})
+                    };
+                });
+
+                const csvContent = [
+                    Object.keys(exportData[0] || {}).join(','),
+                    ...exportData.map(row => Object.values(row).join(','))
+                ].join('\n');
+
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `HMPI_Comprehensive_Results_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            const TabButton = ({ id, label, icon }) => (
+                <button
+                    onClick={() => setActiveTab(id)}
+                    className={`group flex items-center px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 ${
+                        activeTab === id 
+                            ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg' 
+                            : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-blue-600 shadow-md border border-gray-200'
+                    }`}
+                >
+                    <LucideIcon name={icon} size={20} className={`mr-2 transition-transform duration-300 ${activeTab === id ? 'scale-110' : 'group-hover:scale-110'}`} />
+                    {label}
+                </button>
+            );
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 fade-in">
+                    <div className="max-w-7xl mx-auto p-6">
+                        {/* Enhanced Header */}
+                        <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8 mb-8">
+                            <div className="flex items-center mb-6">
+                                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-3 rounded-2xl shadow-lg mr-4">
+                                    <LucideIcon name="Droplets" className="text-white" size={40} />
+                                </div>
+                                <div>
+                                    <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                                        DropSafe : Advanced Groundwater Assessment System
+                                    </h1>
+                                    <p className="text-gray-600 mt-2 text-lg">
+                                        Comprehensive automated analysis with geo-spatial integration and risk assessment
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            {/* Enhanced Feature Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                <div className="group bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200/50 rounded-2xl p-5 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                                    <div className="flex items-center mb-3">
+                                        <div className="bg-blue-600 p-2 rounded-xl mr-3">
+                                            <LucideIcon name="Zap" className="text-white" size={18} />
+                                        </div>
+                                        <span className="font-bold text-blue-900">Automated Computation</span>
+                                    </div>
+                                    <p className="text-sm text-blue-800">
+                                        Standard methodologies for HMPI, HEI, MI, and Cd indices with error reduction
+                                    </p>
+                                </div>
+                                
+                                <div className="group bg-gradient-to-br from-emerald-50 to-teal-100 border border-emerald-200/50 rounded-2xl p-5 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                                    <div className="flex items-center mb-3">
+                                        <div className="bg-emerald-600 p-2 rounded-xl mr-3">
+                                            <LucideIcon name="MapPin" className="text-white" size={18} />
+                                        </div>
+                                        <span className="font-bold text-emerald-900">Geo-Spatial Integration</span>
+                                    </div>
+                                    <p className="text-sm text-emerald-800">
+                                        GPS coordinates, elevation, depth data with spatial analysis capabilities
+                                    </p>
+                                </div>
+                                
+                                <div className="group bg-gradient-to-br from-purple-50 to-pink-100 border border-purple-200/50 rounded-2xl p-5 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                                    <div className="flex items-center mb-3">
+                                        <div className="bg-purple-600 p-2 rounded-xl mr-3">
+                                            <LucideIcon name="Users" className="text-white" size={18} />
+                                        </div>
+                                        <span className="font-bold text-purple-900">Multi-User Interface</span>
+                                    </div>
+                                    <p className="text-sm text-purple-800">
+                                        Designed for scientists, researchers, environmental agencies, and policymakers
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            {/* Enhanced Info Banner */}
+                            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/50 rounded-2xl p-6 shadow-inner">
+                                <div className="flex items-start">
+                                    <div className="bg-amber-500 p-2 rounded-xl mr-4 flex-shrink-0">
+                                        <LucideIcon name="Target" className="text-white" size={20} />
+                                    </div>
+                                    <div className="text-amber-900">
+                                        <h3 className="font-bold mb-2">Enhanced Features</h3>
+                                        <p className="text-sm leading-relaxed">
+                                            Automated validation, comprehensive risk assessment, quality categorization, 
+                                            batch CSV processing, and advanced error detection to minimize manual effort and improve accuracy.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Enhanced Navigation */}
+                        <div className="flex flex-wrap gap-3 mb-8 justify-center">
+                            <TabButton id="input" label="Sample Input" icon="Upload" />
+                            <TabButton id="dataset" label="Dataset Import" icon="Database" />
+                            <TabButton id="calculate" label="Calculate & Validate" icon="Calculator" />
+                            <TabButton id="results" label="Results & Analysis" icon="BarChart3" />
+                            <TabButton id="risk" label="Risk Assessment" icon="Shield" />
+                            <TabButton id="export" label="Export & Reports" icon="Download" />
+                        </div>
+
+                        {/* Enhanced Tab Content */}
+                        <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20">
+                            
+                            {/* Sample Input Tab */}
+                            {activeTab === 'input' && (
+                                <div className="p-8">
+                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                                        <div>
+                                            <h2 className="text-2xl font-bold text-gray-800 mb-2">Comprehensive Water Sample Data Input</h2>
+                                            <p className="text-gray-600">Enter detailed information for each groundwater sample</p>
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-4">
+                                            <div className="bg-white rounded-xl p-3 shadow-md border">
+                                                <label className="text-sm font-medium text-gray-700 mr-2">Standard:</label>
+                                                <select 
+                                                    value={standards} 
+                                                    onChange={(e) => setStandards(e.target.value)}
+                                                    className="border-0 bg-transparent font-medium text-blue-600 focus:ring-0"
+                                                >
+                                                    <option value="WHO">WHO Guidelines</option>
+                                                    <option value="EPA">EPA Standards</option>
+                                                    <option value="Indian">Indian Standards (BIS)</option>
+                                                </select>
+                                            </div>
+                                            <div className="bg-white rounded-xl p-3 shadow-md border">
+                                                <label className="flex items-center text-sm font-medium">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={autoValidation} 
+                                                        onChange={(e) => setAutoValidation(e.target.checked)}
+                                                        className="mr-2 rounded text-blue-600 focus:ring-blue-500"
+                                                    />
+                                                    Auto-validate
+                                                </label>
+                                            </div>
+                                            <button 
+                                                onClick={addSample}
+                                                className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-indigo-800 transform hover:scale-105 transition-all duration-200 shadow-lg font-medium"
+                                            >
+                                                Add Sample
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        {sampleData.map(sample => {
+                                            const validation = autoValidation ? validateSampleData(sample) : { errors: [], warnings: [], isValid: true };
+                                            return (
+                                                <div key={sample.id} className="bg-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+                                                    {/* Validation Status */}
+                                                    {autoValidation && (validation.errors.length > 0 || validation.warnings.length > 0) && (
+                                                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200 p-4">
+                                                            {validation.errors.length > 0 && (
+                                                                <div className="mb-3">
+                                                                    <div className="flex items-center text-red-600 mb-2">
+                                                                        <LucideIcon name="AlertTriangle" size={16} className="mr-2" />
+                                                                        <span className="font-semibold text-sm">ERRORS</span>
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        {validation.errors.map((error, idx) => (
+                                                                            <p key={idx} className="text-sm text-red-600 bg-red-50 px-3 py-1 rounded-lg">{error}</p>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            {validation.warnings.length > 0 && (
+                                                                <div>
+                                                                    <div className="flex items-center text-amber-600 mb-2">
+                                                                        <LucideIcon name="Info" size={16} className="mr-2" />
+                                                                        <span className="font-semibold text-sm">WARNINGS</span>
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        {validation.warnings.map((warning, idx) => (
+                                                                            <p key={idx} className="text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded-lg">{warning}</p>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    <div className="p-6">
+                                                        {/* Basic Information */}
+                                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                                                            <div>
+                                                                <label className="block text-sm font-semibold mb-2 text-gray-700">Sample Name</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={sample.name}
+                                                                    onChange={(e) => updateSample(sample.id, 'name', e.target.value)}
+                                                                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                                    placeholder="Enter sample name"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-sm font-semibold mb-2 text-gray-700">Location</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={sample.location}
+                                                                    onChange={(e) => updateSample(sample.id, 'location', e.target.value)}
+                                                                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                                    placeholder="Sampling location"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-sm font-semibold mb-2 text-gray-700">Date</label>
+                                                                <input
+                                                                    type="date"
+                                                                    value={sample.date}
+                                                                    onChange={(e) => updateSample(sample.id, 'date', e.target.value)}
+                                                                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                                />
+                                                            </div>
+                                                            <div className="flex items-end">
+                                                                <button 
+                                                                    onClick={() => removeSample(sample.id)}
+                                                                    className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-3 rounded-xl hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 font-medium"
+                                                                >
+                                                                    Remove
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Geographic Information */}
+                                                        <div className="border-t border-gray-200 pt-6 mb-6">
+                                                            <h4 className="font-bold mb-4 flex items-center text-gray-800">
+                                                                <div className="bg-emerald-100 p-2 rounded-xl mr-3">
+                                                                    <LucideIcon name="MapPin" size={18} className="text-emerald-600" />
+                                                                </div>
+                                                                Geographic & Physical Data
+                                                            </h4>
+                                                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                                                <div>
+                                                                    <label className="block text-sm font-semibold mb-2 text-gray-700">Latitude</label>
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.000001"
+                                                                        value={sample.coordinates?.lat || ''}
+                                                                        onChange={(e) => updateSample(sample.id, 'coordinates', { ...sample.coordinates, lat: e.target.value })}
+                                                                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                                        placeholder="e.g., 25.4358"
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-sm font-semibold mb-2 text-gray-700">Longitude</label>
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.000001"
+                                                                        value={sample.coordinates?.lng || ''}
+                                                                        onChange={(e) => updateSample(sample.id, 'coordinates', { ...sample.coordinates, lng: e.target.value })}
+                                                                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                                        placeholder="e.g., 81.8463"
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-sm font-semibold mb-2 text-gray-700">Elevation (m)</label>
+                                                                    <input
+                                                                        type="number"
+                                                                        value={sample.elevation || ''}
+                                                                        onChange={(e) => updateSample(sample.id, 'elevation', e.target.value)}
+                                                                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                                        placeholder="Above sea level"
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-sm font-semibold mb-2 text-gray-700">Well Depth (m)</label>
+                                                                    <input
+                                                                        type="number"
+                                                                        value={sample.depth || ''}
+                                                                        onChange={(e) => updateSample(sample.id, 'depth', e.target.value)}
+                                                                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                                        placeholder="Groundwater depth"
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-sm font-semibold mb-2 text-gray-700">Aquifer Type</label>
+                                                                    <select
+                                                                        value={sample.aquiferType || 'Unconfined'}
+                                                                        onChange={(e) => updateSample(sample.id, 'aquiferType', e.target.value)}
+                                                                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                                    >
+                                                                        <option value="Unconfined">Unconfined</option>
+                                                                        <option value="Confined">Confined</option>
+                                                                        <option value="Semi-confined">Semi-confined</option>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Heavy Metal Concentrations */}
+                                                        <div className="border-t border-gray-200 pt-6">
+                                                            <h4 className="font-bold mb-4 text-gray-800">Heavy Metal Concentrations (μg/L)</h4>
+                                                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                                                {Object.keys(waterQualityStandards[standards]).map(metal => (
+                                                                    <div key={metal} className="space-y-2">
+                                                                        <label className="block text-sm font-semibold text-gray-700">
+                                                                            {metal}
+                                                                            <span className="text-xs text-gray-500 ml-1 block">
+                                                                                Standard: {waterQualityStandards[standards][metal]} μg/L
+                                                                            </span>
+                                                                        </label>
+                                                                        <input
+                                                                            type="number"
+                                                                            value={sample.metals[metal] || ''}
+                                                                            onChange={(e) => updateMetalConcentration(sample.id, metal, e.target.value)}
+                                                                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                                            placeholder="0.0"
+                                                                            step="0.01"
+                                                                        />
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Calculate Tab */}
+                            {activeTab === 'calculate' && (
+                                <div className="p-8">
+                                    <div className="mb-8">
+                                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Calculate & Validate Pollution Indices</h2>
+                                        <p className="text-gray-600">Automated computation using standard methodologies with comprehensive validation</p>
+                                    </div>
+                                    
+                                    <div className="text-center">
+                                        <button 
+                                            onClick={calculateAllIndices}
+                                            disabled={sampleData.length === 0}
+                                            className="group bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-10 py-4 rounded-2xl hover:from-blue-700 hover:to-indigo-800 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200 shadow-lg font-semibold text-lg flex items-center mx-auto"
+                                        >
+                                            <LucideIcon name="Calculator" className="mr-3 group-hover:rotate-12 transition-transform duration-200" size={24} />
+                                            Calculate All Indices with Validation
+                                        </button>
+                                        <p className="text-gray-600 mt-4">
+                                            Automated computation using standard methodologies with error reduction
+                                        </p>
+                                    </div>
+
+                                    {processingStatus && (
+                                        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl text-center">
+                                            <p className="text-blue-800 font-medium">{processingStatus}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Results Tab */}
+                            {activeTab === 'results' && (
+                                <div className="p-8">
+                                    <div className="mb-8">
+                                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Results & Analysis</h2>
+                                        <p className="text-gray-600">Comprehensive pollution assessment with quality categorization</p>
+                                    </div>
+                                    
+                                    {/* Summary Statistics */}
+                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                                        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white text-center transform hover:scale-105 transition-all duration-200 shadow-lg">
+                                            <div className="text-3xl font-bold mb-2">{sampleData.length}</div>
+                                            <div className="text-blue-100 font-medium">Total Samples</div>
+                                        </div>
+                                        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white text-center transform hover:scale-105 transition-all duration-200 shadow-lg">
+                                            <div className="text-3xl font-bold mb-2">
+                                                {qualityCategories.filter(c => c === 'Excellent' || c === 'Good').length}
+                                            </div>
+                                            <div className="text-emerald-100 font-medium">Good Quality</div>
+                                        </div>
+                                        <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-6 text-white text-center transform hover:scale-105 transition-all duration-200 shadow-lg">
+                                            <div className="text-3xl font-bold mb-2">
+                                                {Object.values(riskAssessment).filter(r => r?.riskLevel === 'High' || r?.riskLevel === 'Critical').length}
+                                            </div>
+                                            <div className="text-orange-100 font-medium">High Risk</div>
+                                        </div>
+                                        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white text-center transform hover:scale-105 transition-all duration-200 shadow-lg">
+                                            <div className="text-3xl font-bold mb-2">
+                                                {sampleData.filter(s => s.coordinates?.lat && s.coordinates?.lng).length}
+                                            </div>
+                                            <div className="text-purple-100 font-medium">Geo-referenced</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        {sampleData.map(sample => {
+                                            const sampleResults = results[sample.id];
+                                            if (!sampleResults) return null;
+
+                                            return (
+                                                <div key={sample.id} className="bg-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+                                                    <div className="flex justify-between items-start p-6 pb-4">
+                                                        <div>
+                                                            <h3 className="text-xl font-bold text-gray-800 mb-1">{sample.name}</h3>
+                                                            <p className="text-gray-600 mb-2">
+                                                                📍 {sample.location} | 📅 {sample.date}
+                                                            </p>
+                                                            {sample.coordinates?.lat && sample.coordinates?.lng && (
+                                                                <p className="text-sm text-gray-500">
+                                                                    🌍 {parseFloat(sample.coordinates.lat).toFixed(4)}, {parseFloat(sample.coordinates.lng).toFixed(4)}
+                                                                </p>
+                                                            )}
+                                                            {sample.depth && (
+                                                                <p className="text-sm text-gray-500 mt-1">
+                                                                    🕳️ Depth: {sample.depth}m | 💧 Aquifer: {sample.aquiferType}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                        
+                                                        {sampleResults.qualityCategory && (
+                                                            <div className={`px-4 py-2 rounded-full text-sm font-bold ${sampleResults.qualityCategory.badgeColor} shadow-md`}>
+                                                                {sampleResults.qualityCategory.category}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="px-6 pb-4">
+                                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                                                            {Object.entries(sampleResults).filter(([key]) => ['hmpi', 'hei', 'mi', 'cd'].includes(key)).map(([index, data]) => (
+                                                                <div key={index} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 text-center border">
+                                                                    <div className="text-sm font-bold text-gray-600 mb-1">{index.toUpperCase()}</div>
+                                                                    <div className="text-2xl font-bold text-gray-900 mb-2">{data.value.toFixed(2)}</div>
+                                                                    <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${data.interpretation.color}`}>
+                                                                        {data.interpretation.level}
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-600 mt-2">
+                                                                        {data.interpretation.risk}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        {sampleResults.qualityCategory && (
+                                                            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-4 mb-4 border">
+                                                                <h4 className="font-bold mb-2 text-gray-800">💧 Water Quality Assessment</h4>
+                                                                <p className="text-sm text-gray-700">{sampleResults.qualityCategory.suitability}</p>
+                                                            </div>
+                                                        )}
+
+                                                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
+                                                            {Object.entries(sample.metals).filter(([, conc]) => conc > 0).map(([metal, conc]) => {
+                                                                const standard = waterQualityStandards[standards][metal];
+                                                                const ratio = conc / standard;
+                                                                return (
+                                                                    <div key={metal} className={`p-3 rounded-xl border transition-all duration-200 hover:shadow-md ${
+                                                                        ratio > 2 ? 'bg-gradient-to-br from-red-50 to-red-100 border-red-200' :
+                                                                        ratio > 1 ? 'bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200' :
+                                                                        'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200'
+                                                                    }`}>
+                                                                        <div className="font-bold text-gray-800">{metal}</div>
+                                                                        <div className={`font-semibold ${ratio > 1 ? 'text-red-600' : 'text-emerald-600'}`}>
+                                                                            {conc} μg/L
+                                                                        </div>
+                                                                        <div className="text-gray-500">Std: {standard}</div>
+                                                                        {ratio > 1 && (
+                                                                            <div className="text-red-600 font-bold">{ratio.toFixed(1)}x limit</div>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Risk Assessment Tab */}
+                            {activeTab === 'risk' && (
+                                <div className="p-8">
+                                    <div className="mb-8">
+                                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Comprehensive Risk Assessment</h2>
+                                        <p className="text-gray-600">Detailed health risk analysis with contamination tracking</p>
+                                    </div>
+                                    
+                                    <div className="space-y-6">
+                                        {sampleData.map(sample => {
+                                            const risk = riskAssessment[sample.id];
+                                            if (!risk) return null;
+
+                                            return (
+                                                <div key={sample.id} className="bg-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+                                                    <div className="flex justify-between items-start p-6">
+                                                        <div>
+                                                            <h3 className="text-xl font-bold text-gray-800 mb-1">{sample.name}</h3>
+                                                            <p className="text-gray-600 mb-1">📍 {sample.location}</p>
+                                                            {sample.coordinates?.lat && sample.coordinates?.lng && (
+                                                                <p className="text-sm text-gray-500">
+                                                                    🌍 Coordinates: {parseFloat(sample.coordinates.lat).toFixed(4)}, {parseFloat(sample.coordinates.lng).toFixed(4)}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                        <div className={`px-4 py-2 rounded-full text-sm font-bold shadow-md ${
+                                                            risk.riskLevel === 'Critical' ? 'bg-red-100 text-red-800' :
+                                                            risk.riskLevel === 'High' ? 'bg-orange-100 text-orange-800' :
+                                                            risk.riskLevel === 'Moderate' ? 'bg-amber-100 text-amber-800' :
+                                                            'bg-emerald-100 text-emerald-800'
+                                                        }`}>
+                                                            {risk.riskLevel} Risk
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="px-6 pb-6">
+                                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                                            <div>
+                                                                <h4 className="font-bold mb-4 text-gray-800 flex items-center">
+                                                                    🧪 Contamination Analysis
+                                                                </h4>
+                                                                
+                                                                {risk.criticalExceedances?.length > 0 && (
+                                                                    <div className="mb-4">
+                                                                        <h5 className="text-sm font-bold text-red-700 mb-3">🚨 Critical Exceedances:</h5>
+                                                                        <div className="space-y-2">
+                                                                            {risk.criticalExceedances.map((exc, idx) => (
+                                                                                <div key={idx} className="bg-gradient-to-r from-red-50 to-red-100 border border-red-200 p-3 rounded-xl">
+                                                                                    <div className="flex justify-between items-center">
+                                                                                        <span className="font-bold text-red-800">{exc.metal}</span>
+                                                                                        <span className="text-xs bg-red-200 text-red-800 px-2 py-1 rounded-full font-bold">
+                                                                                            {(exc.ratio).toFixed(1)}x limit
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div className="text-xs text-red-700 mt-1">
+                                                                                        {exc.concentration} μg/L (Standard: {exc.standard} μg/L)
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                {risk.moderateExceedances?.length > 0 && (
+                                                                    <div className="mb-4">
+                                                                        <h5 className="text-sm font-bold text-orange-700 mb-3">⚠️ Moderate Exceedances:</h5>
+                                                                        <div className="space-y-2">
+                                                                            {risk.moderateExceedances.map((exc, idx) => (
+                                                                                <div key={idx} className="bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 p-3 rounded-xl">
+                                                                                    <div className="flex justify-between items-center">
+                                                                                        <span className="font-bold text-orange-800">{exc.metal}</span>
+                                                                                        <span className="text-xs bg-orange-200 text-orange-800 px-2 py-1 rounded-full font-bold">
+                                                                                            {(exc.ratio).toFixed(1)}x limit
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div className="text-xs text-orange-700 mt-1">
+                                                                                        {exc.concentration} μg/L (Standard: {exc.standard} μg/L)
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {risk.criticalExceedances?.length === 0 && risk.moderateExceedances?.length === 0 && (
+                                                                    <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-xl p-4">
+                                                                        <div className="flex items-center text-emerald-800">
+                                                                            <LucideIcon name="CheckCircle" size={16} className="mr-2" />
+                                                                            <span className="font-medium">No significant exceedances detected</span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            <div>
+                                                                <h4 className="font-bold mb-4 text-gray-800 flex items-center">
+                                                                    💡 Recommendations
+                                                                </h4>
+                                                                <div className="space-y-3">
+                                                                    {risk.recommendations?.map((rec, idx) => (
+                                                                        <div key={idx} className="flex items-start p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                                                                            <LucideIcon name="CheckCircle" size={16} className="text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                                                                            <p className="text-sm text-blue-800 font-medium">{rec}</p>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Export Tab */}
+                            {activeTab === 'export' && (
+                                <div className="p-8">
+                                    <div className="mb-8">
+                                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Export Data & Comprehensive Reports</h2>
+                                        <p className="text-gray-600">Generate detailed reports for research, compliance, and decision-making</p>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                        <div className="bg-white border border-gray-200 rounded-2xl shadow-lg p-8">
+                                            <h3 className="font-bold text-xl mb-6 flex items-center text-gray-800">
+                                                <div className="bg-emerald-100 p-2 rounded-xl mr-3">
+                                                    <LucideIcon name="Download" size={20} className="text-emerald-600" />
+                                                </div>
+                                                Export Options
+                                            </h3>
+                                            <div className="space-y-4">
+                                                <button 
+                                                    onClick={exportResults}
+                                                    disabled={Object.keys(results).length === 0}
+                                                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-700 text-white px-6 py-4 rounded-xl hover:from-emerald-700 hover:to-teal-800 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200 shadow-lg font-semibold flex items-center justify-center"
+                                                >
+                                                    <LucideIcon name="FileText" className="mr-3" size={20} />
+                                                    Export Comprehensive CSV Report
+                                                </button>
+                                                
+                                                <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-4">
+                                                    <p className="font-semibold text-gray-800 mb-2">Report includes:</p>
+                                                    <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                                                        <li>All pollution indices (HMPI, HEI, MI, Cd)</li>
+                                                        <li>Geographic coordinates & physical data</li>
+                                                        <li>Quality categorization & risk levels</li>
+                                                        <li>Metal concentrations vs standards</li>
+                                                        <li>Validation status & recommendations</li>
+                                                        <li>Critical & moderate exceedances count</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-white border border-gray-200 rounded-2xl shadow-lg p-8">
+                                            <h3 className="font-bold text-xl mb-6 text-gray-800">Export Summary</h3>
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 text-center">
+                                                        <div className="text-2xl font-bold text-blue-800">{sampleData.length}</div>
+                                                        <div className="text-xs text-blue-600 font-medium">Total Samples</div>
+                                                    </div>
+                                                    <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-4 text-center">
+                                                        <div className="text-2xl font-bold text-emerald-800">{Object.keys(results).length}</div>
+                                                        <div className="text-xs text-emerald-600 font-medium">Calculated Results</div>
+                                                    </div>
+                                                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 text-center">
+                                                        <div className="text-2xl font-bold text-purple-800">
+                                                            {sampleData.filter(s => s.coordinates?.lat && s.coordinates?.lng).length}
+                                                        </div>
+                                                        <div className="text-xs text-purple-600 font-medium">Geo-referenced</div>
+                                                    </div>
+                                                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 text-center">
+                                                        <div className="text-2xl font-bold text-orange-800">{Object.keys(riskAssessment).length}</div>
+                                                        <div className="text-xs text-orange-600 font-medium">Risk Assessments</div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <span className="font-semibold text-blue-800">Standard Used:</span>
+                                                        <span className="bg-blue-200 text-blue-800 px-3 py-1 rounded-full text-sm font-bold">{standards}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Dataset Import Tab */}
+                            {activeTab === 'dataset' && (
+                                <div className="p-8">
+                                    <div className="mb-8">
+                                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Batch Dataset Import</h2>
+                                        <p className="text-gray-600">Upload CSV files for bulk processing of groundwater samples</p>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                                        <div className="group bg-gradient-to-br from-blue-50 to-indigo-100 border-2 border-dashed border-blue-300 rounded-3xl p-8 text-center hover:border-blue-400 transition-all duration-300">
+                                            <div className="bg-blue-600 p-4 rounded-2xl inline-block mb-4">
+                                                <LucideIcon name="Database" size={48} className="text-white" />
+                                            </div>
+                                            <h3 className="font-bold text-xl mb-3 text-blue-900">Import CSV Dataset</h3>
+                                            <p className="text-blue-700 mb-6">
+                                                Upload a CSV file with heavy metal concentration data and geo-coordinates
+                                            </p>
+                                            <input
+                                                type="file"
+                                                accept=".csv"
+                                                onChange={handleFileUpload}
+                                                className="hidden"
+                                                id="csv-upload"
+                                            />
+                                            <label
+                                                htmlFor="csv-upload"
+                                                className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-8 py-3 rounded-xl cursor-pointer hover:from-blue-700 hover:to-indigo-800 transform hover:scale-105 transition-all duration-200 shadow-lg font-medium inline-block"
+                                            >
+                                                Choose CSV File
+                                            </label>
+                                            {datasetFile && (
+                                                <div className="mt-4 p-3 bg-green-100 rounded-xl border border-green-200">
+                                                    <p className="text-green-800 font-medium">Selected: {datasetFile.name}</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-8">
+                                            <h3 className="font-bold text-xl mb-4 text-gray-800">Required CSV Format</h3>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <h4 className="font-semibold text-emerald-800 mb-2">Required columns:</h4>
+                                                    <ul className="list-disc list-inside text-gray-600 space-y-1 text-sm">
+                                                        <li>Sample Name</li>
+                                                        <li>Location</li>
+                                                        <li>Latitude, Longitude</li>
+                                                        <li>Date</li>
+                                                        <li>Metal concentrations: As, Cd, Cr, Cu, Fe, Pb, Mn, Ni, Zn, Hg</li>
+                                                    </ul>
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-semibold text-blue-800 mb-2">Optional columns:</h4>
+                                                    <ul className="list-disc list-inside text-gray-600 space-y-1 text-sm">
+                                                        <li>Elevation, Depth, Aquifer Type</li>
+                                                    </ul>
+                                                </div>
+                                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                                                    <p className="text-xs text-blue-700">
+                                                        💡 Metal concentrations should be in μg/L units
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6">
+                                        <div className="flex items-center">
+                                            <div className="bg-blue-600 p-2 rounded-xl mr-4">
+                                                <LucideIcon name="Info" className="text-white" size={20} />
+                                            </div>
+                                            <div className="text-blue-900">
+                                                <h4 className="font-bold mb-1">Automated Processing</h4>
+                                                <p className="text-sm">
+                                                    The system will automatically validate imported data, check for missing geo-coordinates, 
+                                                    detect unrealistic values, and flag potential errors to minimize manual verification effort.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<GroundwaterHMPICalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>
